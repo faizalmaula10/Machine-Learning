@@ -1,0 +1,113 @@
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+from mlxtend.plotting import plot_decision_regions
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+sns.set()
+import warnings
+warnings.filterwarnings('ignore')
+# %matplotlib inline
+
+import pandas as pd
+
+
+df = pd.read_excel('/content/data_knn_fix.xlsx')
+print(df)
+
+df=df.drop(columns=['GDPPC'])
+
+df=df.drop(columns=['Negara'],axis=0)
+
+df
+
+df['Emisi'].value_counts()
+
+from sklearn.model_selection import train_test_split
+X_train,X_test,y_train,y_test = train_test_split(X,y,test_size=0.2,random_state=42, stratify=y)
+
+from sklearn.preprocessing import StandardScaler
+sc_X = StandardScaler()
+X =  pd.DataFrame(sc_X.fit_transform(df.drop(['Emisi'],axis = 1),),
+        columns=['CO2 Emission per capita', 'GDP','Penduduk','Corruption Perception Index','HDI','Innovation Index'])
+
+y = df['Emisi']
+
+data=[X,y]
+
+X
+
+y
+
+data
+
+from sklearn.neighbors import KNeighborsClassifier
+
+
+test_scores = []
+train_scores = []
+
+for i in range(1,30):
+
+    knn = KNeighborsClassifier(i)
+    knn.fit(X_train,y_train)
+
+    train_scores.append(knn.score(X_train,y_train))
+    test_scores.append(knn.score(X_test,y_test))
+
+max_train_score = max(train_scores)
+train_scores_ind = [i for i, v in enumerate(train_scores) if v == max_train_score]
+print('Max train score {} % and k = {}'.format(max_train_score*100,list(map(lambda x: x+1, train_scores_ind))))
+
+## score that comes from testing on the datapoints that were split in the beginning to be used for testing solely
+max_test_score = max(test_scores)
+test_scores_ind = [i for i, v in enumerate(test_scores) if v == max_test_score]
+print('Max test score {} % and k = {}'.format(max_test_score*100,list(map(lambda x: x+1, test_scores_ind))))
+
+fig,ax=plt.subplots()
+p = sns.lineplot(train_scores,marker='*',label='Train Score',ax=ax)
+
+p = sns.lineplot(test_scores,marker='o',label='Test Score',ax=ax)
+
+ax.set_xlim(1,25)
+dim=np.arange(1,25)
+plt.xticks(np.arange(len(train_scores)), np.arange(1, len(test_scores)+1))
+
+plt.show()
+
+knn = KNeighborsClassifier(15)
+
+knn.fit(X_train,y_train)
+knn.score(X_test,y_test)
+
+y_pred = knn.predict(X_test)
+from sklearn import metrics
+cnf_matrix = metrics.confusion_matrix(y_test, y_pred)
+p = sns.heatmap(pd.DataFrame(cnf_matrix), annot=True, cmap="YlGnBu" ,fmt='g')
+plt.title('Confusion matrix', y=1.1)
+plt.ylabel('Actual label')
+plt.xlabel('Predicted label')
+
+#import classification_report
+from sklearn.metrics import classification_report
+print(classification_report(y_test,y_pred))
+
+y_pred_proba = knn.predict_proba(X_test)[:, 1]
+
+y_pred_1 = knn.predict_proba(X_test)[:, 1]
+
+y_pred_proba = knn.predict_proba(X_test)[::,1]
+fpr, tpr, _ = metrics.roc_curve(y_test,  y_pred_proba)
+auc = metrics.roc_auc_score(y_test, y_pred_proba)
+
+#create ROC curve
+plt.plot(fpr,tpr,label="AUC="+str(auc))
+plt.ylabel('True Positive Rate')
+plt.xlabel('False Positive Rate')
+plt.legend(loc=4)
+plt.show()
